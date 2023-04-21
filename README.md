@@ -1,4 +1,6 @@
 # MPP-Blender-Addon
+![MPP-Main](https://user-images.githubusercontent.com/7782271/233642499-eee27746-5005-4b7d-bfbb-07108802f1c3.jpg)
+
 MPP -Material Pick and Paste- Blender Addon<br>
 Add-on to quickly copy and paste materials from shortcuts!<br>
 
@@ -18,3 +20,6 @@ We plan to sell it on Gumroad and Blender Market as a donation<br>
 v0.5 - April 21, 2023<br>
 First release<br>
 
+Please contact us if you have any requests or inquiries<br>
+[3dnchu](https://3dnchu.com)
+[Twitter](https://twitter.com/ymt3d)
