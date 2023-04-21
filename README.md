@@ -21,5 +21,5 @@ v0.5 - April 21, 2023<br>
 First release<br>
 
 Please contact us if you have any requests or inquiries<br>
-[3dnchu](https://3dnchu.com)
-[Twitter](https://twitter.com/ymt3d)
+[3dnchu.com](https://3dnchu.com)<br>
+[Twitter | ymt3d](https://twitter.com/ymt3d)<br>
