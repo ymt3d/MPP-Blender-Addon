@@ -16,6 +16,13 @@ If there is nothing under the mouse, the material is applied to the selected obj
 If you would like to support the development of such an add-on, please make a donation.<br>
 We plan to sell it on Gumroad and Blender Market as a donation<br>
 
+### Requirements<br>
+Confirmed with Blender 3.4<br>
+Unconfirmed for other versions. If you have any problems, please contact me.<br>
+
+[MPP | Gumroad](https://yamato3d.gumroad.com/l/mpp)<br>
+MPP | Blender Market - Coming soon<br>
+
 ##  Update log<br>
 v0.5 - April 21, 2023<br>
 First release<br>
