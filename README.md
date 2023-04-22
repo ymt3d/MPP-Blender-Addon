@@ -11,6 +11,11 @@ Holds the material directly under the mouse
 Applies the material to the object surface directly under the mouse<br>
 If there is nothing under the mouse, the material is applied to the selected object or surface<br>
 
+For the Pick and Paste functions, the shortcut keys can be changed from the Add-on Preferences screen.<br>
+Pick :Alt+Shift+MiddleClick <br>
+Paste :Alt+Ctrl+MiddleClick<br>
+By default, <br>
+
 ### Requirements<br>
 Confirmed with Blender 3.4<br>
 Unconfirmed for other versions. If you have any problems, please contact me.<br>
