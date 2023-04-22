@@ -7,7 +7,7 @@ License : GNU General Public License version3 (http://www.gnu.org/licenses/)
 bl_info = {
     "name": "MPP -Material Pick and Paste-",
     "author": "Yamato3D-3dnchu.com",
-    "version": (0, 5),
+    "version": (0, 5, 1),
     "blender": (3, 40, 0),
     "location": "View3D > Tool Shelf",
     "description": "Pick and paste materials between objects and faces",
