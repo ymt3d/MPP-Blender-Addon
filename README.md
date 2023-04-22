@@ -22,7 +22,7 @@ Confirmed with Blender 3.4<br>
 Unconfirmed for other versions. If you have any problems, please contact me.<br>
 
 ###  Update log<br>
-v0.5 - April 22, 2023<br>
+v0.5.1 - April 22, 2023<br>
 Fixed error when material does not exist in object when Paste<br>
 
 v0.5 - April 21, 2023<br>
