@@ -3,6 +3,7 @@
 
 MPP -Material Pick and Paste- Blender Addon<br>
 Add-on to quickly copy and paste materials from shortcuts!<br>
+This is probably the fastest copy and paste method in the world!<br>
 
 #### Pick<br>
 Holds the material directly under the mouse
