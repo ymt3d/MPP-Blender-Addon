@@ -90,14 +90,14 @@ class MPP_OT_Paste(Operator):
             if len(obj.material_slots) > 1:
                 obj.material_slots[mat_index].material = picked_material
             else:
+                if len(obj.material_slots) == 0:
+                    obj.data.materials.append(None)
                 obj.material_slots[0].material = picked_material
 
             self.report({'INFO'}, f"Pasted Material: {picked_material.name}")
 
-            # Add undo push after operation
             bpy.ops.ed.undo_push(message="Paste Material")
         else:
-            # If no object is found under the cursor, paste the material to all selected objects or faces in edit mode
             for obj in context.selected_objects:
                 if obj.type == 'MESH':
                     if obj.mode == 'EDIT':
@@ -127,7 +127,6 @@ class MPP_OT_Paste(Operator):
 
                         self.report({'INFO'}, f"Pasted Material: {picked_material.name} to {obj.name}")
 
-            # Add undo push after operation
             bpy.ops.ed.undo_push(message="Paste Material")
 
         return {'FINISHED'}
