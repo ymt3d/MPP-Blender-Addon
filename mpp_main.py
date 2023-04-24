@@ -1,27 +1,99 @@
 import bpy
 import bmesh
+import blf
 from bpy.types import Operator, Menu, Panel
 from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
 
-def menu_draw_face(self, context):
-    layout = self.layout
-    layout.operator_context = 'INVOKE_DEFAULT'
-    layout.menu(MPP_MT_Menu.bl_idname)
+picked_material = None
+global_display_handle = None
+global_display_timer = None
 
-def menu_draw_object(self, context):
-    layout = self.layout
-    layout.operator_context = 'INVOKE_DEFAULT'
-    layout.menu(MPP_MT_Menu.bl_idname)
+#テキスト表示の処理----------------------------
+class TextDisplay:
+    def __init__(self, x, y, text):
+        self.x = x
+        self.y = y
+        self.text = text
+        self._handle = None
 
-picked_material = None  
+    def draw(self, context):
+        font_id = 0
+        dpi = 72
+        font_size = 20
+        shadow_offset_x = 2
+        shadow_offset_y = -2
+        shadow_alpha = 0.5
 
+        # Text shadow
+        blf.color(font_id, 0, 0, 0, shadow_alpha)
+        blf.position(font_id, self.x + shadow_offset_x, self.y + shadow_offset_y, 0)
+        blf.size(font_id, font_size, dpi)
+        blf.draw(font_id, self.text)
+
+        # Text body
+        blf.color(font_id, 1, 1, 1, 1)
+        blf.position(font_id, self.x, self.y, 0)
+        blf.size(font_id, font_size, dpi)
+        blf.draw(font_id, self.text)
+
+        # Draw the outline (black)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 3, 0.0, 0.0, 0.0, 1.0)
+        blf.shadow_offset(font_id, 1, -1)
+        blf.draw(font_id, self.text)
+        blf.disable(font_id, blf.SHADOW)
+        
+    def remove_handler(self, context):
+        if hasattr(self, '_handle') and self._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            self._handle = None
+
+    def remove(self, context):
+        global global_display_handle
+        if hasattr(self, '_handle') and self._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            self._handle = None
+            global_display_handle = None
+
+
+
+
+#Pickの処理----------------------------
 class MPP_OT_Pick(Operator):
     bl_idname = "mpp.pick"
     bl_label = "Material Pick"
     bl_description = "Pick material from object under cursor"
 
+    def __init__(self):
+        self._handle = None
+        self.display_timer = None
+
+    def modal(self, context, event):
+        global global_display_handle
+        global global_display_timer
+
+        if event.type == 'TIMER':
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            self.text_display.remove_handler(context)
+            context.window_manager.event_timer_remove(self.display_timer)
+            context.area.tag_redraw()
+            global_display_handle = None
+            global_display_timer = None
+            return {'CANCELLED'}
+
+        return {'PASS_THROUGH'}
+
     def invoke(self, context, event):
         global picked_material
+        global global_display_handle
+        global global_display_timer
+
+        if global_display_handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(global_display_handle, 'WINDOW')
+            global_display_handle = None
+        if global_display_timer is not None:
+            context.window_manager.event_timer_remove(global_display_timer)
+            global_display_timer = None
 
         coord = event.mouse_region_x, event.mouse_region_y
         region = context.region
@@ -31,6 +103,9 @@ class MPP_OT_Pick(Operator):
         ray_origin = region_2d_to_origin_3d(region, rv3d, coord)
 
         result, location, normal, index, obj, matrix = context.scene.ray_cast(context.view_layer.depsgraph, ray_origin, view_vector)
+
+        if self._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
 
         if obj and obj.type == 'MESH' and index != -1:
             depsgraph = context.evaluated_depsgraph_get()
@@ -44,6 +119,12 @@ class MPP_OT_Pick(Operator):
                 if len(obj.material_slots) > 0 and obj.material_slots[mat_index].material:
                     picked_material = obj.material_slots[mat_index].material
                     self.report({'INFO'}, f"Picked Material: {picked_material.name}")
+
+                    self.text_display = TextDisplay(event.mouse_region_x, event.mouse_region_y, f"Pick: {picked_material.name}")
+                    self._handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw, (context,), 'WINDOW', 'POST_PIXEL')
+
+                    self.display_timer = context.window_manager.event_timer_add(1.0, window=context.window)
+                    context.window_manager.modal_handler_add(self)
                 else:
                     self.report({'WARNING'}, "No material found")
 
@@ -55,18 +136,52 @@ class MPP_OT_Pick(Operator):
         else:
             self.report({'WARNING'}, "No valid selection found")
 
-        return {'FINISHED'}
+        context.area.tag_redraw()
+
+        if self._handle is not None:
+            global_display_handle = self._handle
+        if self.display_timer is not None:
+            global_display_timer = self.display_timer
+
+        return {'RUNNING_MODAL'}
 
 
-
-
+#Pasteの処理----------------------------
 class MPP_OT_Paste(Operator):
     bl_idname = "mpp.paste"
     bl_label = "Material Paste"
     bl_description = "Paste material to object under cursor or selected objects/faces"
 
+    def __init__(self):
+        self._handle = None
+        self.display_timer = None
+
+    def modal(self, context, event):
+        global global_display_handle
+
+        context.area.tag_redraw()
+
+        if event.type == 'TIMER':
+            if self._handle is not None:
+                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+                global_display_handle = None
+            context.window_manager.event_timer_remove(self.display_timer)
+            return {'CANCELLED'}
+
+        return {'PASS_THROUGH'}
+
+
     def invoke(self, context, event):
         global picked_material
+        global global_display_handle
+        global global_display_timer
+
+        if global_display_handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(global_display_handle, 'WINDOW')
+            global_display_handle = None
+        if global_display_timer is not None:
+            context.window_manager.event_timer_remove(global_display_timer)
+            global_display_timer = None
 
         if not picked_material:
             self.report({'WARNING'}, "No material picked")
@@ -128,8 +243,18 @@ class MPP_OT_Paste(Operator):
                         self.report({'INFO'}, f"Pasted Material: {picked_material.name} to {obj.name}")
 
             bpy.ops.ed.undo_push(message="Paste Material")
+            
+        self.text_display = TextDisplay(event.mouse_region_x, event.mouse_region_y, f"Paste: {picked_material.name}")
+        self._handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw, (context,), 'WINDOW', 'POST_PIXEL')
+        self.display_timer = context.window_manager.event_timer_add(1, window=context.window)
+        context.window_manager.modal_handler_add(self)
 
-        return {'FINISHED'}
+        if self._handle is not None:
+            global_display_handle = self._handle
+        if self.display_timer is not None:
+            global_display_timer = self.display_timer
+
+        return {'RUNNING_MODAL'}
 
 
 
