@@ -26,6 +26,9 @@ Confirmed with Blender 3.4<br>
 Unconfirmed for other versions. If you have any problems, please contact me.<br>
 
 ###  Update log<br>
+v0.6.1 - April 25, 2023<br>
+Minor bugs fixed.<br>
+
 v0.6.0 - April 24, 2023<br>
 Text is now displayed when Pick and Paste are used.<br>
 
