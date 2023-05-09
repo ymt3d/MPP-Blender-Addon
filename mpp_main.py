@@ -75,6 +75,7 @@ class MPP_OT_Pick(Operator):
         if event.type == 'TIMER':
             if self._handle is not None:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+                self._handle = None
             self.text_display.remove_handler(context)
             context.window_manager.event_timer_remove(self.display_timer)
             context.area.tag_redraw()
