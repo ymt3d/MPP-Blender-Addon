@@ -100,13 +100,17 @@ class MPP_OT_Pick(Operator):
         global global_display_timer
 
         if event.type == 'TIMER':
-            if self._handle is not None:
-                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-                self._handle = None
+            try:
+                if self._handle is not None:  # ハンドラがNoneでないことを確認します
+                    bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+                    self._handle = None
+                    global_display_handle = None  # global_display_handle も None に設定します
+            except ValueError:
+                pass  # do nothing if handler was already removed
+
             self.text_display.remove_handler(context)
             context.window_manager.event_timer_remove(self.display_timer)
             context.area.tag_redraw()
-            global_display_handle = None
             global_display_timer = None
             return {'CANCELLED'}
 
@@ -191,9 +195,13 @@ class MPP_OT_Paste(Operator):
         context.area.tag_redraw()
 
         if event.type == 'TIMER':
-            if self._handle is not None:
-                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-                global_display_handle = None
+            try:
+                if self._handle is not None:
+                    bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+                    self._handle = None
+                    global_display_handle = None
+            except ValueError:
+                pass  # do nothing if handler was already removed
             context.window_manager.event_timer_remove(self.display_timer)
             return {'CANCELLED'}
 
@@ -206,8 +214,12 @@ class MPP_OT_Paste(Operator):
         global global_display_timer
 
         if global_display_handle is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(global_display_handle, 'WINDOW')
+            try:
+                bpy.types.SpaceView3D.draw_handler_remove(global_display_handle, 'WINDOW')
+            except ValueError:
+                pass  # do nothing if handler was already removed
             global_display_handle = None
+
         if global_display_timer is not None:
             context.window_manager.event_timer_remove(global_display_timer)
             global_display_timer = None
