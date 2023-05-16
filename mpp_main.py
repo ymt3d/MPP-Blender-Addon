@@ -1,8 +1,11 @@
 import bpy
 import bmesh
 import blf
+import bgl
+import gpu
 from bpy.types import Operator, Menu, Panel
 from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
+from gpu_extras.batch import batch_for_shader
 
 picked_material = None
 global_display_handle = None
@@ -55,6 +58,30 @@ class TextDisplay:
             self._handle = None
             global_display_handle = None
 
+    def draw_preview(self, material):
+        size = 128  # プレビュー画像のサイズ
+        x, y = self.x + self.offset_x, self.y - self.offset_y - 50  # プレビュー画像の表示位置を設定
+
+        # プレビュー画像を取得
+        if material.preview is not None:
+            preview = material.preview
+        else:
+            preview = bpy.data.images.new("preview", width=size, height=size)
+            material.preview = preview
+            preview.generated_type = 'MATERIAL'
+            preview.generated_id = material.name
+
+        # OpenGLでテクスチャを描画
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glBindTexture(bgl.GL_TEXTURE_2D, preview.bindcode)
+
+        shader = gpu.shader.from_builtin('2D_IMAGE')
+        batch = batch_for_shader(shader, 'TRI_FAN', {"pos": [(x, y), (x + size, y), (x + size, y + size), (x, y + size)], "texCoord": [(0, 0), (1, 0), (1, 1), (0, 1)]})
+        shader.bind()
+        shader.uniform_int("image", 0)
+        batch.draw(shader)
+
+        bgl.glDisable(bgl.GL_BLEND)
 
 
 
@@ -124,6 +151,7 @@ class MPP_OT_Pick(Operator):
 
                     self.text_display = TextDisplay(event.mouse_region_x, event.mouse_region_y, f"Pick: {picked_material.name}")
                     self._handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw, (context,), 'WINDOW', 'POST_PIXEL')
+                    self.preview_handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw_preview, (picked_material,), 'WINDOW', 'POST_PIXEL')
 
                     self.display_timer = context.window_manager.event_timer_add(1.0, window=context.window)
                     context.window_manager.modal_handler_add(self)
@@ -146,7 +174,6 @@ class MPP_OT_Pick(Operator):
             global_display_timer = self.display_timer
 
         return {'RUNNING_MODAL'}
-
 
 #Pasteの処理----------------------------
 class MPP_OT_Paste(Operator):

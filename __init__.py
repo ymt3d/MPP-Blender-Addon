@@ -7,8 +7,8 @@ License : GNU General Public License version3 (http://www.gnu.org/licenses/)
 bl_info = {
     "name": "MPP -Material Pick and Paste-",
     "author": "Yamato3D-3dnchu.com",
-    "version": (0, 6, 1),
-    "blender": (3, 40, 0),
+    "version": (0, 6, 2),
+    "blender": (3, 5, 1),
     "location": "View3D > Tool Shelf",
     "description": "Pick and paste materials between objects and faces",
     "warning": "",
@@ -72,8 +72,6 @@ class MPP_AddonPreferences(AddonPreferences):
             row = layout.row()
             row.label(text="Link:")
             row.operator( "wm.url_open", text="3dnchu.com", icon="URL").url = "https://3dnchu.com"
-
-
 
 classes = (
     mpp_main.MPP_MT_Menu,
