@@ -12,11 +12,14 @@ global_display_handle = None
 global_display_timer = None
 
 #Text----------------------------
+
 class TextDisplay:
-    def __init__(self, x, y, text):
+    def __init__(self, x, y, text, offset_x=0, offset_y=0):  
         self.x = x
-        self.y = y
+        self.y = y + 10
         self.text = text
+        self.offset_x = offset_x
+        self.offset_y = offset_y
         self._handle = None
 
     def draw(self, context):
@@ -58,28 +61,25 @@ class TextDisplay:
             self._handle = None
             global_display_handle = None
 
-    def draw_preview(self, material):
-        size = 128  
-        x, y = self.x + self.offset_x, self.y - self.offset_y - 50  
+#MaterialPreview----------------------------
+class MPP_OT_MaterialPreview(bpy.types.Operator):
+    bl_idname = "mpp.material_preview"
+    bl_label = "Material Preview"
+    bl_options = {'REGISTER'}
 
-        if material.preview is not None:
-            preview = material.preview
-        else:
-            preview = bpy.data.images.new("preview", width=size, height=size)
-            material.preview = preview
-            preview.generated_type = 'MATERIAL'
-            preview.generated_id = material.name
+    def check(self, context):
+        return True
+    
+    def execute(self, context):
+        return {'FINISHED'}
 
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, preview.bindcode)
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=150)  
 
-        shader = gpu.shader.from_builtin('2D_IMAGE')
-        batch = batch_for_shader(shader, 'TRI_FAN', {"pos": [(x, y), (x + size, y), (x + size, y + size), (x, y + size)], "texCoord": [(0, 0), (1, 0), (1, 1), (0, 1)]})
-        shader.bind()
-        shader.uniform_int("image", 0)
-        batch.draw(shader)
-
-        bgl.glDisable(bgl.GL_BLEND)
+    def draw(self, context):
+        layout = self.layout
+        if globals().get('picked_material', None):
+            layout.template_preview(globals().get('picked_material'), show_buttons=False)  
 
 #Pick----------------------------
 class MPP_OT_Pick(Operator):
@@ -136,6 +136,7 @@ class MPP_OT_Pick(Operator):
         if self._handle is not None:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
 
+        picked_material = None
         if obj and obj.type == 'MESH':
             if obj.mode == 'EDIT':
                 bm = bmesh.from_edit_mesh(obj.data)
@@ -179,10 +180,12 @@ class MPP_OT_Pick(Operator):
 
             self.text_display = TextDisplay(event.mouse_region_x, event.mouse_region_y, f"Pick: {picked_material.name}")
             self._handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw, (context,), 'WINDOW', 'POST_PIXEL')
-            self.preview_handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw_preview, (picked_material,), 'WINDOW', 'POST_PIXEL')
-
+            
             self.display_timer = context.window_manager.event_timer_add(1.0, window=context.window)
             context.window_manager.modal_handler_add(self)
+
+            #bpy.ops.mpp.material_preview('INVOKE_DEFAULT')
+
 
         context.area.tag_redraw()
 
@@ -192,6 +195,7 @@ class MPP_OT_Pick(Operator):
             global_display_timer = self.display_timer
 
         return {'RUNNING_MODAL'}
+
 
 
 def paste_material_to_edit_mode_object(obj, picked_material):
@@ -334,6 +338,7 @@ class MPP_MT_Menu(Menu):
         layout.operator(MPP_OT_Paste.bl_idname) 
 
 classes = [
+    MPP_OT_MaterialPreview,
     MPP_OT_Pick,
     MPP_OT_Paste,
     MPP_MT_Menu,
