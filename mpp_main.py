@@ -137,23 +137,9 @@ class MPP_OT_Pick(Operator):
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
 
         picked_material = None
-        if obj and obj.type == 'MESH':
-            if obj.mode == 'EDIT':
-                bm = bmesh.from_edit_mesh(obj.data)
-                active_face = bm.faces.active
-
-                if active_face is None:
-                    self.report({'WARNING'}, "No active face found")
-                    return {'CANCELLED'}
-
-                mat_index = active_face.material_index
-
-                if len(obj.material_slots) > 0 and obj.material_slots[mat_index].material:
-                    picked_material = obj.material_slots[mat_index].material
-                else:
-                    self.report({'WARNING'}, "No material found")
-                    return {'CANCELLED'}
-            else:
+        
+        if obj:
+            if obj.type == 'MESH':
                 depsgraph = context.evaluated_depsgraph_get()
                 eval_obj = obj.evaluated_get(depsgraph)
                 temp_mesh = eval_obj.to_mesh()
@@ -171,6 +157,32 @@ class MPP_OT_Pick(Operator):
                     self.report({'WARNING'}, "Unable to pick material from the mirrored part")
 
                 eval_obj.to_mesh_clear()
+
+            elif obj.type in ['CURVE', 'FONT', 'SURFACE', 'META']:
+
+                is_obj_selected = obj.select_get()
+                if is_obj_selected:
+                    obj.select_set(False)
+
+                depsgraph = context.evaluated_depsgraph_get()
+                temp_obj = obj.evaluated_get(depsgraph)
+                temp_mesh = temp_obj.to_mesh()
+
+                try:
+                    face = temp_mesh.polygons[index]
+                    mat_index = face.material_index
+                    if len(obj.material_slots) > 0 and obj.material_slots[mat_index].material:
+                        picked_material = obj.material_slots[mat_index].material
+                    else:
+                        self.report({'WARNING'}, "No material found")
+
+                except IndexError:
+                    self.report({'WARNING'}, "Unable to pick material")
+
+                temp_obj.to_mesh_clear()
+
+                if is_obj_selected:
+                    obj.select_set(True)
 
         else:
             self.report({'WARNING'}, "No valid selection found")
@@ -273,33 +285,50 @@ class MPP_OT_Paste(Operator):
 
         result, location, normal, index, obj, matrix = context.scene.ray_cast(context.view_layer.depsgraph, ray_origin, view_vector)
 
-        if obj and obj.type == 'MESH' and index != -1:
-            if obj.mode == 'EDIT':
-                if paste_material_to_edit_mode_object(obj, picked_material):
-                    self.report({'INFO'}, f"Pasted Material: {picked_material.name} to selected faces")
+        if obj and index != -1:
+            if obj.type == 'MESH':
+                if obj.mode == 'EDIT':
+                    if paste_material_to_edit_mode_object(obj, picked_material):
+                        self.report({'INFO'}, f"Pasted Material: {picked_material.name} to selected faces")
+                    else:
+                        self.report({'WARNING'}, "No faces selected")
+                        return {'CANCELLED'}
                 else:
-                    self.report({'WARNING'}, "No faces selected")
-                    return {'CANCELLED'}
-            else:
-                obj.update_from_editmode()
-                obj_eval = obj.evaluated_get(context.view_layer.depsgraph)
-                face = obj_eval.data.polygons[index]
+                    obj.update_from_editmode()
+                    obj_eval = obj.evaluated_get(context.view_layer.depsgraph)
+                    face = obj_eval.data.polygons[index]
+                    mat_index = face.material_index
+
+                    if len(obj.material_slots) > 1:
+                        obj.material_slots[mat_index].material = picked_material
+                    else:
+                        if len(obj.material_slots) == 0:
+                            obj.data.materials.append(None)
+                        obj.material_slots[0].material = picked_material
+
+                    self.report({'INFO'}, f"Pasted Material: {picked_material.name}")
+            elif obj.type in ['CURVE', 'FONT', 'SURFACE', 'META']:
+                # We temporarily convert the non-mesh object to a mesh to get the material slot corresponding to the face
+                depsgraph = context.evaluated_depsgraph_get()
+                temp_obj = obj.evaluated_get(depsgraph)
+                temp_mesh = temp_obj.to_mesh()
+
+                face = temp_mesh.polygons[index]
                 mat_index = face.material_index
 
-                if len(obj.material_slots) > 1:
+                temp_obj.to_mesh_clear()
+
+                if len(obj.material_slots) > mat_index:
                     obj.material_slots[mat_index].material = picked_material
                 else:
-                    if len(obj.material_slots) == 0:
-                        obj.data.materials.append(None)
-                    obj.material_slots[0].material = picked_material
-
+                    obj.data.materials.append(picked_material)
                 self.report({'INFO'}, f"Pasted Material: {picked_material.name}")
 
             bpy.ops.ed.undo_push(message="Paste Material")
         else:
             for obj in context.selected_objects:
-                if obj.type == 'MESH':
-                    if obj.mode == 'EDIT':
+                if obj.type in ['MESH', 'CURVE', 'FONT', 'SURFACE', 'META']:
+                    if obj.type == 'MESH' and obj.mode == 'EDIT':
                         if paste_material_to_edit_mode_object(obj, picked_material):
                             self.report({'INFO'}, f"Pasted Material: {picked_material.name} to selected faces")
                         else:
@@ -314,7 +343,8 @@ class MPP_OT_Paste(Operator):
                         self.report({'INFO'}, f"Pasted Material: {picked_material.name} to {obj.name}")
 
             bpy.ops.ed.undo_push(message="Paste Material")
-            
+
+                    
         self.text_display = TextDisplay(event.mouse_region_x, event.mouse_region_y, f"Paste: {picked_material.name}")
         self._handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw, (context,), 'WINDOW', 'POST_PIXEL')
         self.display_timer = context.window_manager.event_timer_add(1, window=context.window)
