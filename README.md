@@ -26,6 +26,13 @@ Confirmed with Blender 3.4<br>
 Unconfirmed for other versions. If you have any problems, please contact me.<br>
 
 ###  Update log<br>
+
+v0.6.5 - May 20, 2023<br>
+Minor bugs fixed.<br>
+
+v0.6.3 - May 18, 2023<br>
+Minor bugs fixed.<br>
+
 v0.6.2 - May 16, 2023<br>
 Minor bugs fixed.<br>
 
