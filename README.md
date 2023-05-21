@@ -15,7 +15,10 @@ Applies the material to the object surface directly under the mouse<br>
 If there is nothing under the mouse, the material is applied to the selected object or surface<br>
 
 ![MPP-MultiObjects](https://user-images.githubusercontent.com/7782271/233788236-772c0dcf-4d93-4a64-a804-15390bf47b1e.gif)
+![MPP-Test2](https://github.com/ymt3d/MPP-Blender-Addon/assets/7782271/019bcea8-30b6-4357-bb90-aa07ef7fb245)
+![MPP-Test3](https://github.com/ymt3d/MPP-Blender-Addon/assets/7782271/74a2246b-741a-47d2-bcf5-9fc986ee503f)
 
+#### KeyMaps<br>
 For the Pick and Paste functions, the shortcut keys can be changed from the Add-on Preferences screen.<br>
 Pick :Alt+Shift+MiddleClick <br>
 Paste :Alt+Ctrl+MiddleClick<br>
@@ -38,6 +41,7 @@ Unconfirmed for other versions. If you have any problems, please contact me.<br>
 v0.6.9 - May 20, 2023<br>
 Non-mesh objects (curves, text, metaballs, NURBS) are now supported.<br>
 Resolved a problem related to this.<br>
+![MPP-Test1](https://github.com/ymt3d/MPP-Blender-Addon/assets/7782271/a3ef1bc0-1caf-4b00-9527-39e36f7d8789)
 
 v0.6.8 - May 20, 2023<br>
 Non-mesh objects (curves, text, metaballs, NURBS) are now supported.<br>
