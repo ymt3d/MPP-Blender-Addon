@@ -26,7 +26,6 @@ Confirmed with Blender 3.x<br>
 Unconfirmed for other versions. If you have any problems, please contact me.<br>
 
 ### Known Problems<br>
-* For non-mesh objects, if the object is selected and active, you will not be able to pick and paste properly.<br>
 * Undo sometimes does not work.<br>
 
 ### Future Planned Features<br>
@@ -36,6 +35,9 @@ Unconfirmed for other versions. If you have any problems, please contact me.<br>
 * Color Only Paste<br>
 
 ###  Update log<br>
+v0.6.9 - May 20, 2023<br>
+Non-mesh objects (curves, text, metaballs, NURBS) are now supported.<br>
+Resolved a problem related to this.<br>
 
 v0.6.8 - May 20, 2023<br>
 Non-mesh objects (curves, text, metaballs, NURBS) are now supported.<br>
