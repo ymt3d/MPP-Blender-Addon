@@ -6,6 +6,7 @@ import gpu
 from bpy.types import Operator, Menu, Panel
 from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
 from gpu_extras.batch import batch_for_shader
+from bpy_extras import view3d_utils
 
 picked_material = None
 global_display_handle = None
@@ -214,6 +215,28 @@ def paste_material_to_edit_mode_object(obj, picked_material):
     bmesh.update_edit_mesh(obj.data)
     return True
 
+# テキストの表示条件をチェックする関数
+def should_display_text(selected_objects, mouse_x, mouse_y):
+    # マウス直下にオブジェクトが存在する場合は表示する
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+    mouse_coord = (mouse_x, mouse_y)
+    view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, mouse_coord)
+    ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, mouse_coord)
+    
+    scene = bpy.context.scene
+    depsgraph = bpy.context.evaluated_depsgraph_get()  # Depsgraphオブジェクトを取得
+    hit, location, normal, index, object, matrix = scene.ray_cast(depsgraph, ray_origin, view_vector)
+
+    if hit:
+        return True
+
+    # 選択されたオブジェクトがない場合は表示しない
+    if not selected_objects:
+        return False
+
+    return True
+
 #Paste----------------------------
 class MPP_OT_Paste(Operator):
     bl_idname = "mpp.paste"
@@ -262,18 +285,18 @@ class MPP_OT_Paste(Operator):
             self.report({'WARNING'}, "No material picked")
             return {'CANCELLED'}
 
-        # Save the current selection and active object
+        # 現在の選択状態とアクティブオブジェクトを保存
         selected_objects = context.selected_objects.copy()
         active_object = context.view_layer.objects.active
 
-        # Save the current mode if the active object is not a mesh
+        # アクティブオブジェクトがメッシュでない場合は、現在のモードを保存
         current_mode = None
         if active_object:
             current_mode = active_object.mode
             if active_object.type != 'MESH' or active_object.mode != 'EDIT':
                 bpy.ops.object.mode_set(mode='OBJECT')
 
-        # Deselect all objects and clear active object
+        # 全オブジェクトの選択を解除し、アクティブオブジェクトをクリア
         if current_mode != 'EDIT':
             bpy.ops.object.select_all(action='DESELECT')
         context.view_layer.objects.active = None
@@ -285,11 +308,13 @@ class MPP_OT_Paste(Operator):
         view_vector = region_2d_to_vector_3d(region, rv3d, coord)
         ray_origin = region_2d_to_origin_3d(region, rv3d, coord)
 
+        # カーソル位置のオブジェクトと面の情報を取得
         result, location, normal, index, obj, matrix = context.scene.ray_cast(context.view_layer.depsgraph, ray_origin, view_vector)
 
         if obj and index != -1:
             if obj.type == 'MESH':
                 if obj.mode == 'EDIT':
+                    # メッシュオブジェクトの編集モードにマテリアルを貼り付ける
                     if paste_material_to_edit_mode_object(obj, picked_material):
                         self.report({'INFO'}, f"Pasted Material: {picked_material.name} to selected faces")
                     else:
@@ -306,6 +331,7 @@ class MPP_OT_Paste(Operator):
 
                         self.report({'INFO'}, f"Pasted Material: {picked_material.name}")
                 else:
+                    # メッシュオブジェクトの編集モードでない場合にマテリアルを貼り付ける
                     obj.update_from_editmode()
                     obj_eval = obj.evaluated_get(context.view_layer.depsgraph)
                     face = obj_eval.data.polygons[index]
@@ -321,7 +347,7 @@ class MPP_OT_Paste(Operator):
                     self.report({'INFO'}, f"Pasted Material: {picked_material.name}")
 
             elif obj.type in ['CURVE', 'FONT', 'SURFACE', 'META']:
-                # We temporarily convert the non-mesh object to a mesh to get the material slot corresponding to the face
+                # メッシュ以外のオブジェクトにマテリアルを貼り付けるため一時的にメッシュに変換
                 depsgraph = context.evaluated_depsgraph_get()
                 temp_obj = obj.evaluated_get(depsgraph)
                 temp_mesh = temp_obj.to_mesh()
@@ -339,15 +365,18 @@ class MPP_OT_Paste(Operator):
 
             bpy.ops.ed.undo_push(message="Paste Material")
         else:
-            for obj in context.selected_objects:
+            # カーソル位置にオブジェクトがない場合、選択された全オブジェクトにマテリアルを貼り付ける
+            for obj in selected_objects:
                 if obj.type in ['MESH', 'CURVE', 'FONT', 'SURFACE', 'META']:
                     if obj.type == 'MESH' and obj.mode == 'EDIT':
+                        # メッシュオブジェクトの編集モードにマテリアルを貼り付ける
                         if paste_material_to_edit_mode_object(obj, picked_material):
                             self.report({'INFO'}, f"Pasted Material: {picked_material.name} to selected faces")
                         else:
                             self.report({'WARNING'}, "No faces selected")
                             return {'CANCELLED'}
                     else:
+                        # メッシュオブジェクトの編集モードでない場合にマテリアルを貼り付ける
                         if len(obj.material_slots) > 0:
                             obj.material_slots[0].material = picked_material
                         else:
@@ -357,19 +386,21 @@ class MPP_OT_Paste(Operator):
 
             bpy.ops.ed.undo_push(message="Paste Material")
 
-        # Restore the previous selection and active object
+        # 選択状態とアクティブオブジェクトを復元
         for obj in selected_objects:
             obj.select_set(True)
         context.view_layer.objects.active = active_object
 
-        # If the active object was in edit mode, restore the mode
+        # アクティブオブジェクトが編集モードだった場合、モードを復元
         if current_mode:
             bpy.ops.object.mode_set(mode=current_mode)
-                    
-        self.text_display = TextDisplay(event.mouse_region_x, event.mouse_region_y, f"Paste: {picked_material.name}")
-        self._handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw, (context,), 'WINDOW', 'POST_PIXEL')
-        self.display_timer = context.window_manager.event_timer_add(1, window=context.window)
-        context.window_manager.modal_handler_add(self)
+        
+        if should_display_text(selected_objects, event.mouse_region_x, event.mouse_region_y):
+            # テキストの表示
+            self.text_display = TextDisplay(event.mouse_region_x, event.mouse_region_y, f"Paste: {picked_material.name}")
+            self._handle = bpy.types.SpaceView3D.draw_handler_add(self.text_display.draw, (context,), 'WINDOW', 'POST_PIXEL')
+            self.display_timer = context.window_manager.event_timer_add(1, window=context.window)
+            context.window_manager.modal_handler_add(self)
 
         if self._handle is not None:
             global_display_handle = self._handle

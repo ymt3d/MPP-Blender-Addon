@@ -38,6 +38,10 @@ Unconfirmed for other versions. If you have any problems, please contact me.<br>
 * Color Only Paste<br>
 
 ###  Update log<br>
+v0.7.0 - May 22, 2023<br>
+Fixed behavior when selecting multiple objects and Paste with no space.<br>
+When nothing is selected, text is no longer displayed when Paste is performed with no space.<br>
+
 v0.6.9 - May 20, 2023<br>
 Non-mesh objects (curves, text, metaballs, NURBS) are now supported.<br>
 Resolved a problem related to this.<br>
