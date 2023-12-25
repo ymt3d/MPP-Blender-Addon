@@ -34,13 +34,13 @@ class TextDisplay:
         # Text shadow
         blf.color(font_id, 0, 0, 0, shadow_alpha)
         blf.position(font_id, self.x + shadow_offset_x, self.y + shadow_offset_y, 0)
-        blf.size(font_id, font_size, dpi)
+        blf.size(font_id, font_size)#, dpi
         blf.draw(font_id, self.text)
 
         # Text body
         blf.color(font_id, 1, 1, 1, 1)
         blf.position(font_id, self.x, self.y, 0)
-        blf.size(font_id, font_size, dpi)
+        blf.size(font_id, font_size)#, dpi
         blf.draw(font_id, self.text)
 
         # Draw the outline (black)
