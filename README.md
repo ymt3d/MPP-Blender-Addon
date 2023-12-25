@@ -38,6 +38,9 @@ Unconfirmed for other versions. If you have any problems, please contact me.<br>
 * Color Only Paste<br>
 
 ###  Update log<br>
+v0.7.1 - Dec 25, 2023<br>
+Blender 4.0 Support.<br>
+
 v0.7.0 - May 22, 2023<br>
 Fixed behavior when selecting multiple objects and Paste with no space.<br>
 When nothing is selected, text is no longer displayed when Paste is performed with no space.<br>
